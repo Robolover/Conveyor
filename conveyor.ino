@@ -1,330 +1,10 @@
-#include <RC100.h>
-#include <Dynamixel.h>
-
-#define WHEEL_L_R 1
-#define WHEEL_R_R 2
-#define WHEEL_L_F 3
-#define WHEEL_R_F 4
-#define JOINT_L_R 5
-#define JOINT_R_R 6
-#define JOINT_L_F 7
-#define JOINT_R_F 8
-
-#define ADDR_TORQUE_ENABLE 64
-#define ADDR_GOAL_VELOCITY 104
-#define ADDR_GOAL_POSITION 116
-
-#define DYNAMIXEL_POWER_ENABLE_PIN 32
-
-#define ON  1
-#define OFF 0
-
-#define BODY_LENGTH           25.6
-#define SPEED_ADD_ON          2
-
-class DynamixelStatus
-{
- private:
-   int velocity = 200;
-  //  double distance_from_center = 25.6;
-
-   int wheel_vel[8] = {0, };
-   int joint_angle[8] = {0, };
-
-   enum MODE
-   {
-     NONE = 0
-     , FORWARD, BACKWARD, RLEFT, RRIGHT, PLEFT, PRIGHT
-     , PLEFT_FORWARD, PRIGHT_FORWARD, PLEFT_BACKWARD, PRIGHT_BACKWARD, RLEFT_FORWARD, RRIGHT_FORWARD, RLEFT_BACKWARD, RRIGHT_BACKWARD, RLEFT_PLEFT, RLEFT_PRIGHT, RRIGHT_PLEFT, RRIGHT_PRIGHT
-     , RLEFT_PLEFT_FORWARD, RLEFT_PLEFT_BACKWARD, RRIGHT_PLEFT_FORWARD, RRIGHT_PLEFT_BACKWARD, RLEFT_PRIGHT_FORWARD, RLEFT_PRIGHT_BACKWARD, RRIGHT_PRIGHT_FORWARD, RRIGHT_PRIGHT_BACKWARD
-   } mobile_mode;
-
- public:
-   double distance_from_center = 25.6;
-
-   int wheel_l_r_vel, wheel_r_r_vel, wheel_l_f_vel, wheel_r_f_vel;
-   int joint_l_r_angle, joint_r_r_angle, joint_l_f_angle, joint_r_f_angle;
-
-   DynamixelStatus()
-   : wheel_l_r_vel(0), wheel_r_r_vel(0), wheel_l_f_vel(0), wheel_r_f_vel(0)
-   , joint_l_r_angle(0), joint_r_r_angle(0), joint_l_f_angle(0), joint_r_f_angle(0)
-   { }
-
-   MODE getDirection(int rcData)
-   {
-     switch (rcData)
-     {
-      case (RC100_BTN_U): mobile_mode = FORWARD; break;
-      case (RC100_BTN_D): mobile_mode = BACKWARD; break;
-      case (RC100_BTN_L): mobile_mode = RLEFT; break;
-      case (RC100_BTN_R): mobile_mode = RRIGHT; break;
-      case (RC100_BTN_6): mobile_mode = PLEFT; break;
-      case (RC100_BTN_5): mobile_mode = PRIGHT; break;
-
-      case (RC100_BTN_U + RC100_BTN_6): mobile_mode = PLEFT_FORWARD; break;
-      case (RC100_BTN_U + RC100_BTN_5): mobile_mode = PRIGHT_FORWARD; break;
-      case (RC100_BTN_D + RC100_BTN_6): mobile_mode = PLEFT_BACKWARD; break;
-      case (RC100_BTN_D + RC100_BTN_5): mobile_mode = PRIGHT_BACKWARD; break;
-      case (RC100_BTN_U + RC100_BTN_L): mobile_mode = RLEFT_FORWARD; break;
-      case (RC100_BTN_U + RC100_BTN_R): mobile_mode = RRIGHT_FORWARD; break;
-      case (RC100_BTN_D + RC100_BTN_L): mobile_mode = RLEFT_BACKWARD; break;
-      case (RC100_BTN_D + RC100_BTN_R): mobile_mode = RRIGHT_BACKWARD; break;
-      case (RC100_BTN_L + RC100_BTN_6): mobile_mode = RLEFT_PLEFT; break;
-      case (RC100_BTN_L + RC100_BTN_5): mobile_mode = RLEFT_PRIGHT; break;
-      case (RC100_BTN_R + RC100_BTN_6): mobile_mode = RRIGHT_PLEFT; break;
-      case (RC100_BTN_R + RC100_BTN_5): mobile_mode = RRIGHT_PRIGHT; break;
-
-      case (RC100_BTN_L + RC100_BTN_6 + RC100_BTN_U): mobile_mode = RLEFT_PLEFT_FORWARD; break;
-      case (RC100_BTN_L + RC100_BTN_6 + RC100_BTN_D): mobile_mode = RLEFT_PLEFT_BACKWARD; break;
-      case (RC100_BTN_R + RC100_BTN_6 + RC100_BTN_U): mobile_mode = RRIGHT_PLEFT_FORWARD; break;
-      case (RC100_BTN_R + RC100_BTN_6 + RC100_BTN_D): mobile_mode = RRIGHT_PLEFT_BACKWARD; break;
-      case (RC100_BTN_L + RC100_BTN_5 + RC100_BTN_U): mobile_mode = RLEFT_PRIGHT_FORWARD; break;
-      case (RC100_BTN_L + RC100_BTN_5 + RC100_BTN_D): mobile_mode = RLEFT_PRIGHT_BACKWARD; break;
-      case (RC100_BTN_R + RC100_BTN_5 + RC100_BTN_U): mobile_mode = RRIGHT_PRIGHT_FORWARD; break;
-      case (RC100_BTN_R + RC100_BTN_5 + RC100_BTN_D): mobile_mode = RRIGHT_PRIGHT_BACKWARD; break;
-
-      default: if (rcData & RC100_BTN_1) { if (velocity <= 245) velocity += 5; }
-                else if (rcData & RC100_BTN_2) { if (distance_from_center >= (12.8 * sqrt(2.0) + 2.0)) distance_from_center -= 2.0; }
-                else if (rcData & RC100_BTN_3) { if (velocity >= 5) velocity -= 5; }
-                else if (rcData & RC100_BTN_4) { if (distance_from_center <= 49.2) distance_from_center += 2.0; }
-                else { mobile_mode = NONE; }
-                break;
-     }
-
-     return mobile_mode;
-   }
-
-   void setParams()
-   {
-     switch (mobile_mode)
-     {
-       case FORWARD:                wheel_l_r_vel = -velocity * SPEED_ADD_ON; wheel_r_r_vel = velocity * SPEED_ADD_ON; wheel_l_f_vel = -velocity * SPEED_ADD_ON; wheel_r_f_vel = velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = 512; joint_r_r_angle = -512; joint_l_f_angle = -512; joint_r_f_angle = 512;
-                                    break;
-       case BACKWARD:               wheel_l_r_vel = velocity * SPEED_ADD_ON; wheel_r_r_vel = -velocity * SPEED_ADD_ON; wheel_l_f_vel = velocity * SPEED_ADD_ON; wheel_r_f_vel = -velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = 512; joint_r_r_angle = -512; joint_l_f_angle = -512; joint_r_f_angle = 512;
-                                    break;
-       case RLEFT:                  wheel_l_r_vel = velocity; wheel_r_r_vel = velocity; wheel_l_f_vel = velocity; wheel_r_f_vel = velocity;
-                                    joint_l_r_angle = 0; joint_r_r_angle = 0; joint_l_f_angle = 0; joint_r_f_angle = 0;
-                                    break;
-       case RRIGHT:                 wheel_l_r_vel = -velocity; wheel_r_r_vel = -velocity; wheel_l_f_vel = -velocity; wheel_r_f_vel = -velocity;
-                                    joint_l_r_angle = 0; joint_r_r_angle = 0; joint_l_f_angle = 0; joint_r_f_angle = 0;
-                                    break;
-       case PLEFT:                  wheel_l_r_vel = -velocity * SPEED_ADD_ON; wheel_r_r_vel = -velocity * SPEED_ADD_ON; wheel_l_f_vel = velocity * SPEED_ADD_ON; wheel_r_f_vel = velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = -512; joint_r_r_angle = 512; joint_l_f_angle = 512; joint_r_f_angle = -512;
-                                    break;
-       case PRIGHT:                 wheel_l_r_vel = velocity * SPEED_ADD_ON; wheel_r_r_vel = velocity * SPEED_ADD_ON; wheel_l_f_vel = -velocity * SPEED_ADD_ON; wheel_r_f_vel = -velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = -512; joint_r_r_angle = 512; joint_l_f_angle = 512; joint_r_f_angle = -512;
-                                    break;
-
-       case PLEFT_FORWARD:          wheel_l_r_vel = -velocity * SPEED_ADD_ON; wheel_r_r_vel = -velocity * SPEED_ADD_ON; wheel_l_f_vel = velocity * SPEED_ADD_ON; wheel_r_f_vel = velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = 0; joint_r_r_angle = 1024; joint_l_f_angle = 1024; joint_r_f_angle = 0;
-                                    break;
-       case PRIGHT_FORWARD:         wheel_l_r_vel = velocity * SPEED_ADD_ON; wheel_r_r_vel = velocity * SPEED_ADD_ON; wheel_l_f_vel = -velocity * SPEED_ADD_ON; wheel_r_f_vel = -velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = -1024; joint_r_r_angle = 0; joint_l_f_angle = 0; joint_r_f_angle = -1024;
-                                    break;
-       case PLEFT_BACKWARD:         wheel_l_r_vel = -velocity * SPEED_ADD_ON; wheel_r_r_vel = -velocity * SPEED_ADD_ON; wheel_l_f_vel = velocity * SPEED_ADD_ON; wheel_r_f_vel = velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = -1024; joint_r_r_angle = 0; joint_l_f_angle = 0; joint_r_f_angle = -1024;
-                                    break;
-       case PRIGHT_BACKWARD:        wheel_l_r_vel = velocity * SPEED_ADD_ON; wheel_r_r_vel = velocity * SPEED_ADD_ON; wheel_l_f_vel = -velocity * SPEED_ADD_ON; wheel_r_f_vel = -velocity * SPEED_ADD_ON;
-                                    joint_l_r_angle = 0; joint_r_r_angle = 1024; joint_l_f_angle = 1024; joint_r_f_angle = 0;
-                                    break;
-
-       case RLEFT_FORWARD:          wheel_l_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RRIGHT_FORWARD:         wheel_l_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RLEFT_BACKWARD:         wheel_l_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RRIGHT_BACKWARD:        wheel_l_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RLEFT_PLEFT:            wheel_l_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RLEFT_PRIGHT:           wheel_l_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RRIGHT_PLEFT:           wheel_l_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-       case RRIGHT_PRIGHT:          wheel_l_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_r_vel = (int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan(distance_from_center / (BODY_LENGTH / 2.0)))));
-                                    wheel_l_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    wheel_r_f_vel = -(int)((velocity * (BODY_LENGTH / 2.0)) / ((distance_from_center + (BODY_LENGTH / 2.0)) * cos(atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)))));
-                                    joint_l_r_angle = -(1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_r_angle = (1536 - (int)(2048.0 * atan(distance_from_center / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_l_f_angle = -(512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    joint_r_f_angle = (512 - (int)(2048.0 * atan((distance_from_center + BODY_LENGTH) / (BODY_LENGTH / 2.0)) / PI));
-                                    break;
-
-       case RLEFT_PLEFT_FORWARD:    wheel_l_r_vel = -(int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_r_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_l_f_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_f_vel = (int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    joint_l_r_angle = 0;
-                                    joint_r_r_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_l_f_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_f_angle = 0;
-                                    break;
-       case RLEFT_PLEFT_BACKWARD:   wheel_l_r_vel = (int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_r_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_l_f_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_f_vel = -(int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    joint_l_r_angle = 0;
-                                    joint_r_r_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_l_f_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_f_angle = 0;
-                                    break;
-       case RRIGHT_PLEFT_FORWARD:   wheel_l_r_vel = -(int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_r_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_l_f_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_f_vel = (int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    joint_l_r_angle = 0;
-                                    joint_r_r_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_l_f_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_f_angle = 0;
-                                    break;
-       case RRIGHT_PLEFT_BACKWARD:  wheel_l_r_vel = (int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_r_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_l_f_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_f_vel = -(int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    joint_l_r_angle = 0;
-                                    joint_r_r_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_l_f_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_f_angle = 0;
-                                    break;
-       case RLEFT_PRIGHT_FORWARD:   wheel_l_r_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_r_vel = (int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_l_f_vel = -(int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_f_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    joint_l_r_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_r_angle = 0;
-                                    joint_l_f_angle = 0;
-                                    joint_r_f_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    break;
-       case RLEFT_PRIGHT_BACKWARD:  wheel_l_r_vel = (int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_r_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_l_f_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_f_vel = -(int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    joint_l_r_angle = 0;
-                                    joint_r_r_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_l_f_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_f_angle = 0;
-                                    break;
-       case RRIGHT_PRIGHT_FORWARD:  wheel_l_r_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_r_vel = (int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_l_f_vel = -(int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_f_vel = -(int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    joint_l_r_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_r_angle = 0;
-                                    joint_l_f_angle = 0;
-                                    joint_r_f_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    break;
-       case RRIGHT_PRIGHT_BACKWARD: wheel_l_r_vel = (int)(velocity * (distance_from_center + BODY_LENGTH * sqrt(2.0)) / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    wheel_r_r_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_l_f_vel = (int)(velocity * (BODY_LENGTH / sqrt(2.0)) / (cos(atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0))) * (distance_from_center + (BODY_LENGTH / sqrt(2.0)))));
-                                    wheel_r_f_vel = -(int)(velocity * distance_from_center / (distance_from_center + (BODY_LENGTH / sqrt(2.0))));
-                                    joint_l_r_angle = 0;
-                                    joint_r_r_angle = (2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_l_f_angle = -(2048 - (int)(2048.0 * atan((distance_from_center / (BODY_LENGTH / sqrt(2.0)) + 1.0) / PI)));
-                                    joint_r_f_angle = 0;
-                                    break;
-
-       default:                     wheel_l_r_vel = 0; wheel_r_r_vel = 0; wheel_l_f_vel = 0; wheel_r_f_vel = 0;
-                                    break;
-     }
-   }
-
-   int showMode()
-   {
-     return (int)mobile_mode;
-   }
-
-   int* setJointAngle()
-   {
-     if (joint_l_r_angle < -1024) joint_l_r_angle = -1024;
-     else if (joint_l_r_angle > 1024) joint_l_r_angle = 1024;
-     if (joint_r_r_angle < -1024) joint_r_r_angle = -1024;
-     else if (joint_r_r_angle > 1024) joint_r_r_angle = 1024;
-     if (joint_l_f_angle < -1024) joint_l_f_angle = -1024;
-     else if (joint_l_f_angle > 1024) joint_l_f_angle = 1024;
-     if (joint_r_f_angle < -1024) joint_r_f_angle = -1024;
-     else if (joint_r_f_angle > 1024) joint_r_f_angle = 1024;
-
-     joint_angle[0] = JOINT_L_R;
-     joint_angle[1] = joint_l_r_angle + 2048;
-     joint_angle[2] = JOINT_R_R;
-     joint_angle[3] = joint_r_r_angle + 2048;
-     joint_angle[4] = JOINT_L_F;
-     joint_angle[5] = joint_l_f_angle + 2048;
-     joint_angle[6] = JOINT_R_F;
-     joint_angle[7] = joint_r_f_angle + 2048;
-
-     return joint_angle;
-   }
-
-   int* setWheelVel()
-   {
-     wheel_vel[0] = WHEEL_L_R;
-     wheel_vel[1] = wheel_l_r_vel;
-     wheel_vel[2] = WHEEL_R_R;
-     wheel_vel[3] = wheel_r_r_vel;
-     wheel_vel[4] = WHEEL_L_F;
-     wheel_vel[5] = wheel_l_f_vel;
-     wheel_vel[6] = WHEEL_R_F;
-     wheel_vel[7] = wheel_r_f_vel;
-
-     return wheel_vel;
-   }
-};
+#include "conveyor.h"
+#include "conveyor_mode.h"
 
 RC100 Controller;
+Turtlebot3MotorDriver motor_driver;
+TurtlebotMotion turtlebotMotion;
+
 int rcData = 0;
 
 Dynamixel Dxl;
@@ -418,5 +98,97 @@ void loop()
     //   vel[3] = 0;
     // }
     // Dxl.syncWrite(ADDR_GOAL_VELOCITY, 1, vel, 4);
+  }
+}
+
+void setup()
+{
+  // Setting for Dynamixel motors
+  motor_driver.init();
+
+  // Setting for RC100 remote control and cmd_vel
+  remote_controller.begin(1);  //57600bps for RC100
+
+  pinMode(13, OUTPUT);
+
+  SerialBT2.begin(57600);
+
+  // Init Motion
+  controlRealTurtleBot();
+}
+
+void loop()
+{
+  receiveRemoteControlData();
+}
+
+void startDynamixelControlInterrupt()
+{
+  Timer.pause();
+  Timer.setPeriod(CONTROL_PERIOD);           // in microseconds
+  Timer.attachInterrupt(controlRealTurtleBot);
+  Timer.refresh();
+  Timer.resume();
+}
+
+/*******************************************************************************
+* Receive RC100 remote controller data
+*******************************************************************************/
+void receiveRemoteControlData(void)
+{
+  int received_data = 0;
+
+  if (remote_controller.available())
+  {
+    received_data = remote_controller.readData();
+
+    turtlebotMotion.getDirection(received_data);
+
+    controlRealTurtleBot();
+
+    remote_controller.begin(1);  // refresh remote controller buffer
+  }
+}
+
+/*******************************************************************************
+* Control Real TurtleBot
+*******************************************************************************/
+void controlRealTurtleBot()
+{
+  int pres_pos[8] = {0, };
+  int* goal_pos;
+  double dist[8] = {0.0, };
+  int goal_pos_dist_int[8] = {0, };
+  double goal_pos_dist_db[8] = {0.0, };
+
+  turtlebotMotion.setParams();
+
+  for (int motion_num = 0; motion_num < turtlebotMotion.motion_all_num; motion_num++)
+  {
+    double dist_number = turtlebotMotion.time_duration[motion_num] / 0.008;
+
+    goal_pos = turtlebotMotion.setJointAngle(motion_num);
+    motor_driver.syncRead(ADDR_X_PRESENT_POSITION, LEN_X_PRESENT_POSITION, pres_pos);
+
+    for (int joint_num = 0; joint_num < 8; joint_num++)
+    {
+      dist[joint_num] = (goal_pos[joint_num] * 1.0 - pres_pos[joint_num] * 1.0) / dist_number;
+      goal_pos_dist_db[joint_num] = pres_pos[joint_num] * 1.0;
+    }
+
+    for (int res_num = 0; res_num < (int)dist_number; res_num++)
+    {
+      for (int joint_num = 0; joint_num < 8; joint_num++)
+      {
+        goal_pos_dist_db[joint_num] += dist[joint_num];
+        goal_pos_dist_int[joint_num] = (int)goal_pos_dist_db[joint_num];
+      }
+
+      motor_driver.syncWrite(ADDR_X_GOAL_POSITION, LEN_X_GOAL_POSITION, goal_pos_dist_int);
+
+      delay(8);
+    }
+
+    delay(turtlebotMotion.time_space[motion_num] * 1000.0);
   }
 }
