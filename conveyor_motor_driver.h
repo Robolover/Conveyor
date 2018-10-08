@@ -16,8 +16,8 @@
 
 /* Authors: Yoonseok Pyo, Leon Jung, Darby Lim, HanCheol Cho */
 
-#ifndef TURTLEBOT3_REALTURTLEBOT_MOTOR_DRIVER_H_
-#define TURTLEBOT3_REALTURTLEBOT_MOTOR_DRIVER_H_
+#ifndef CONVEYOR_MOTOR_DRIVER_H_
+#define CONVEYOR_MOTOR_DRIVER_H_
 
 #include <DynamixelSDK.h>
 
@@ -46,7 +46,6 @@
 
 #define PROTOCOL_VERSION                2.0     // Dynamixel protocol version 2.0
 
-
 #define WHEEL_L_R 1  // WHEEL LEFT REAR
 #define WHEEL_R_R 2  // WHEEL RIGHT REAR
 #define WHEEL_L_F 3  // WHEEL LEFT FRONT
@@ -65,15 +64,11 @@
 #define BODY_LENGTH           25.6 //(((((())))))
 #define SPEED_ADD_ON          2//(((((((())))))))
 
-#define X_POS_MIN                       0
-#define X_POS_MAX                       4095
-#define X_POS_CENTER                    2048
-
-class Turtlebot3MotorDriver
+class ConveyorMotorDriver
 {
  public:
-  Turtlebot3MotorDriver();
-  ~Turtlebot3MotorDriver();
+  ConveyorMotorDriver();
+  ~ConveyorMotorDriver();
   bool init(void);
   void closeDynamixel(void);
   bool setTorque(uint8_t id, bool onoff);
@@ -82,7 +77,6 @@ class Turtlebot3MotorDriver
   void syncWrite(int address, int length, int value);
   void syncWrite(int address, int length, int* value);
   void syncRead(int address, int length, int* readValues);
-
 
  private:
   uint32_t baudrate_;

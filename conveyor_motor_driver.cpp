@@ -18,18 +18,18 @@
 
 #include "conveyor_motor_driver.h"
 
-Turtlebot3MotorDriver::Turtlebot3MotorDriver()
+ConveyorMotorDriver::ConveyorMotorDriver()
 : baudrate_(BAUDRATE),
   protocol_version_(PROTOCOL_VERSION)
 {
 }
 
-Turtlebot3MotorDriver::~Turtlebot3MotorDriver()
+ConveyorMotorDriver::~ConveyorMotorDriver()
 {
   closeDynamixel();
 }
 
-bool Turtlebot3MotorDriver::init(void)
+bool ConveyorMotorDriver::init(void)
 {
   portHandler_   = dynamixel::PortHandler::getPortHandler(DEVICENAME);
   packetHandler_ = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
@@ -71,7 +71,7 @@ bool Turtlebot3MotorDriver::init(void)
   return true;
 }
 
-bool Turtlebot3MotorDriver::setTorque(uint8_t id, bool onoff)
+bool ConveyorMotorDriver::setTorque(uint8_t id, bool onoff)
 {
   uint8_t dxl_error = 0;
   int dxl_comm_result = COMM_TX_FAIL;
@@ -87,7 +87,7 @@ bool Turtlebot3MotorDriver::setTorque(uint8_t id, bool onoff)
   }
 }
 
-bool Turtlebot3MotorDriver::setProfileAcceleration(uint8_t id, uint32_t value)
+bool ConveyorMotorDriver::setProfileAcceleration(uint8_t id, uint32_t value)
 {
   uint8_t dxl_error = 0;
   int dxl_comm_result = COMM_TX_FAIL;
@@ -103,7 +103,7 @@ bool Turtlebot3MotorDriver::setProfileAcceleration(uint8_t id, uint32_t value)
   }
 }
 
-bool Turtlebot3MotorDriver::setProfileVelocity(uint8_t id, uint32_t value)
+bool ConveyorMotorDriver::setProfileVelocity(uint8_t id, uint32_t value)
 {
   uint8_t dxl_error = 0;
   int dxl_comm_result = COMM_TX_FAIL;
@@ -119,7 +119,7 @@ bool Turtlebot3MotorDriver::setProfileVelocity(uint8_t id, uint32_t value)
   }
 }
 
-void Turtlebot3MotorDriver::closeDynamixel(void)
+void ConveyorMotorDriver::closeDynamixel(void)
 {
   // Disable Dynamixel Torque
   setTorque(WHEEL_L_R, false);
@@ -135,7 +135,7 @@ void Turtlebot3MotorDriver::closeDynamixel(void)
   portHandler_->closePort();
 }
 
-void Turtlebot3MotorDriver::syncWrite(int address, int length, int value)
+void ConveyorMotorDriver::syncWrite(int address, int length, int value)
 {
   // Initialize GroupSyncWrite instance
   dynamixel::GroupSyncWrite groupSyncWrite(portHandler_, packetHandler_, address, length);
@@ -157,7 +157,7 @@ void Turtlebot3MotorDriver::syncWrite(int address, int length, int value)
   groupSyncWrite.clearParam();
 }
 
-void Turtlebot3MotorDriver::syncWrite(int address, int length, int* value)
+void ConveyorMotorDriver::syncWrite(int address, int length, int* value)
 {
   // Initialize GroupSyncWrite instance
   dynamixel::GroupSyncWrite groupSyncWrite(portHandler_, packetHandler_, address, length);
@@ -179,7 +179,7 @@ void Turtlebot3MotorDriver::syncWrite(int address, int length, int* value)
   groupSyncWrite.clearParam();
 }
 
-void Turtlebot3MotorDriver::syncRead(int address, int length, int* readValues)
+void ConveyorMotorDriver::syncRead(int address, int length, int* readValues)
 {
   // Initialize Groupsyncread instance for Present Position
   dynamixel::GroupSyncRead groupSyncRead(portHandler_, packetHandler_, address, length);

@@ -17,9 +17,7 @@
 /* Authors: Yoonseok Pyo, Leon Jung, Darby Lim, HanCheol Cho */
 
 #include <math.h>
-
 #include <RC100.h>
-
 #include "conveyor_motor_driver.h"
 
 #define WHEEL_RADIUS                    0.033     // meter
