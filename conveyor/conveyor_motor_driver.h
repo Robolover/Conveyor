@@ -22,10 +22,10 @@
 #include <DynamixelSDK.h>
 
 // Control table address (Dynamixel X-series)
-#define DYNAMIXEL_POWER_ENABLE_PIN      32//
-#define ADDR_X_TORQUE_ENABLE            64//
-#define ADDR_X_GOAL_VELOCITY            104//
-#define ADDR_X_GOAL_POSITION            116//
+#define DYNAMIXEL_POWER_ENABLE_PIN      32
+#define ADDR_X_TORQUE_ENABLE            64
+#define ADDR_X_GOAL_VELOCITY            104
+#define ADDR_X_GOAL_POSITION            116
 
 #define ADDR_X_PROFILE_ACCELERATION     108
 #define ADDR_X_PROFILE_VELOCITY         112
@@ -37,12 +37,12 @@
 #define LIMIT_X_MAX_VELOCITY            240
 
 // Data Byte Length
-#define LEN_X_TORQUE_ENABLE             1
-#define LEN_X_GOAL_VELOCITY             4
-#define LEN_X_GOAL_POSITION             4
-#define LEN_X_REALTIME_TICK             2
-#define LEN_X_PRESENT_VELOCITY          4
-#define LEN_X_PRESENT_POSITION          4
+#define LEN_TORQUE_ENABLE             1
+#define LEN_GOAL_VELOCITY             4
+#define LEN_GOAL_POSITION             4
+#define LEN_REALTIME_TICK             2
+#define LEN_PRESENT_VELOCITY          4
+#define LEN_PRESENT_POSITION          4
 
 #define PROTOCOL_VERSION                2.0     // Dynamixel protocol version 2.0
 
@@ -61,8 +61,8 @@
 #define TORQUE_ENABLE                   1       // Value for enabling the torque
 #define TORQUE_DISABLE                  0       // Value for disabling the torque
 
-#define BODY_LENGTH           25.6 //(((((())))))
-#define SPEED_ADD_ON          2//(((((((())))))))
+#define BODY_LENGTH           25.6
+#define SPEED_ADD_ON          2
 
 class ConveyorMotorDriver
 {
@@ -74,9 +74,12 @@ class ConveyorMotorDriver
   bool setTorque(uint8_t id, bool onoff);
   bool setProfileAcceleration(uint8_t id, uint32_t value);
   bool setProfileVelocity(uint8_t id, uint32_t value);
-  void syncWrite(int address, int length, int value);
-  void syncWrite(int address, int length, int* value);
-  void syncRead(int address, int length, int* readValues);
+  void syncWriteVelocity(int address, int length, int value);
+  void syncWriteVelocity(int address, int length, int* value);
+  void syncWritePosition(int address, int length, int value);
+  void syncWritePosition(int address, int length, int* value);
+  void syncReadVelocity(int address, int length, int* readValues);
+  void syncReadPosition(int address, int length, int* readValues);
 
  private:
   uint32_t baudrate_;

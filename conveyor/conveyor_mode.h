@@ -21,19 +21,18 @@
 
 #include <RC100.h>
 
+#define BODY_LENGTH       25.6
 #define SPEED_ADD_ON      2
-#define MOTION_NUM        20
 
-#define FASTER            4.0
 
-class TurtlebotMotion
+class ConveyorMode
 {
 private:
   int velocity = 200;
  //  double distance_from_center = 25.6;
 
-  int wheel_vel[8] = {0, };
-  int joint_angle[8] = {0, };
+  int wheel_vel[4] = {0, };
+  int joint_angle[4] = {0, };
 
   enum MODE
   {
@@ -49,7 +48,7 @@ private:
    int wheel_l_r_vel, wheel_r_r_vel, wheel_l_f_vel, wheel_r_f_vel;
    int joint_l_r_angle, joint_r_r_angle, joint_l_f_angle, joint_r_f_angle;
 
-   DynamixelStatus()
+   ConveyorMode()
    : wheel_l_r_vel(0), wheel_r_r_vel(0), wheel_l_f_vel(0), wheel_r_f_vel(0)
    , joint_l_r_angle(0), joint_r_r_angle(0), joint_l_f_angle(0), joint_r_f_angle(0)
    { }
@@ -94,7 +93,6 @@ private:
                 else { mobile_mode = NONE; }
                 break;
      }
-
      return mobile_mode;
    }
 
@@ -301,28 +299,20 @@ private:
      if (joint_r_f_angle < -1024) joint_r_f_angle = -1024;
      else if (joint_r_f_angle > 1024) joint_r_f_angle = 1024;
 
-     joint_angle[0] = JOINT_L_R;
-     joint_angle[1] = joint_l_r_angle + 2048;
-     joint_angle[2] = JOINT_R_R;
-     joint_angle[3] = joint_r_r_angle + 2048;
-     joint_angle[4] = JOINT_L_F;
-     joint_angle[5] = joint_l_f_angle + 2048;
-     joint_angle[6] = JOINT_R_F;
-     joint_angle[7] = joint_r_f_angle + 2048;
-
+     joint_angle[0] = joint_l_r_angle + 2048;
+     joint_angle[1] = joint_r_r_angle + 2048;
+     joint_angle[2] = joint_l_f_angle + 2048;
+     joint_angle[3] = joint_r_f_angle + 2048;
+     
      return joint_angle;
    }
 
    int* setWheelVel()
    {
-     wheel_vel[0] = WHEEL_L_R;
-     wheel_vel[1] = wheel_l_r_vel;
-     wheel_vel[2] = WHEEL_R_R;
-     wheel_vel[3] = wheel_r_r_vel;
-     wheel_vel[4] = WHEEL_L_F;
-     wheel_vel[5] = wheel_l_f_vel;
-     wheel_vel[6] = WHEEL_R_F;
-     wheel_vel[7] = wheel_r_f_vel;
+     wheel_vel[0] = wheel_l_r_vel;
+     wheel_vel[1] = wheel_r_r_vel;
+     wheel_vel[2] = wheel_l_f_vel;
+     wheel_vel[3] = wheel_r_f_vel;
 
      return wheel_vel;
    }

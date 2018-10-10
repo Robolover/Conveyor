@@ -135,71 +135,92 @@ void ConveyorMotorDriver::closeDynamixel(void)
   portHandler_->closePort();
 }
 
-void ConveyorMotorDriver::syncWrite(int address, int length, int value)
+void ConveyorMotorDriver::syncWriteVelocity(int address, int length, int value)
 {
-  // Initialize GroupSyncWrite instance
-  dynamixel::GroupSyncWrite groupSyncWrite(portHandler_, packetHandler_, address, length);
+  dynamixel::GroupSyncWrite groupSyncWriteVelocity(portHandler_, packetHandler_, address, length);
 
-  // Add Dynamixels goal values to the Syncwrite storage
-  groupSyncWrite.addParam(WHEEL_L_R, (uint8_t*)&value);
-  groupSyncWrite.addParam(WHEEL_R_R, (uint8_t*)&value);
-  groupSyncWrite.addParam(WHEEL_L_F, (uint8_t*)&value);
-  groupSyncWrite.addParam(WHEEL_R_F, (uint8_t*)&value);
-  groupSyncWrite.addParam(JOINT_L_R, (uint8_t*)&value);
-  groupSyncWrite.addParam(JOINT_R_R, (uint8_t*)&value);
-  groupSyncWrite.addParam(JOINT_L_F, (uint8_t*)&value);
-  groupSyncWrite.addParam(JOINT_R_F, (uint8_t*)&value);
+  groupSyncWriteVelocity.addParam(WHEEL_L_R, (uint8_t*)&value);
+  groupSyncWriteVelocity.addParam(WHEEL_R_R, (uint8_t*)&value);
+  groupSyncWriteVelocity.addParam(WHEEL_L_F, (uint8_t*)&value);
+  groupSyncWriteVelocity.addParam(WHEEL_R_F, (uint8_t*)&value);
 
-  // Syncwrite goal position
-  groupSyncWrite.txPacket();
-
-  // Clear syncwrite parameter storage
-  groupSyncWrite.clearParam();
+  groupSyncWriteVelocity.txPacket();
+  groupSyncWriteVelocity.clearParam();
 }
 
-void ConveyorMotorDriver::syncWrite(int address, int length, int* value)
+void ConveyorMotorDriver::syncWriteVelocity(int address, int length, int* value)
 {
-  // Initialize GroupSyncWrite instance
-  dynamixel::GroupSyncWrite groupSyncWrite(portHandler_, packetHandler_, address, length);
+  dynamixel::GroupSyncWrite groupSyncWriteVelocity(portHandler_, packetHandler_, address, length);
 
-  // Add Dynamixels goal values to the Syncwrite storage
-  groupSyncWrite.addParam(WHEEL_L_R, (uint8_t*)&value[0]);
-  groupSyncWrite.addParam(WHEEL_R_R, (uint8_t*)&value[1]);
-  groupSyncWrite.addParam(WHEEL_L_F, (uint8_t*)&value[2]);
-  groupSyncWrite.addParam(WHEEL_R_F, (uint8_t*)&value[3]);
-  groupSyncWrite.addParam(JOINT_L_R, (uint8_t*)&value[4]);
-  groupSyncWrite.addParam(JOINT_R_R, (uint8_t*)&value[5]);
-  groupSyncWrite.addParam(JOINT_L_F, (uint8_t*)&value[6]);
-  groupSyncWrite.addParam(JOINT_R_F, (uint8_t*)&value[7]);
+  groupSyncWriteVelocity.addParam(WHEEL_L_R, (uint8_t*)&value[0]);
+  groupSyncWriteVelocity.addParam(WHEEL_R_R, (uint8_t*)&value[1]);
+  groupSyncWriteVelocity.addParam(WHEEL_L_F, (uint8_t*)&value[2]);
+  groupSyncWriteVelocity.addParam(WHEEL_R_F, (uint8_t*)&value[3]);
 
-  // Syncwrite goal position
-  groupSyncWrite.txPacket();
-
-  // Clear syncwrite parameter storage
-  groupSyncWrite.clearParam();
+  groupSyncWriteVelocity.txPacket();
+  groupSyncWriteVelocity.clearParam();
 }
 
-void ConveyorMotorDriver::syncRead(int address, int length, int* readValues)
+void ConveyorMotorDriver::syncWritePosition(int address, int length, int value)
+{
+  dynamixel::GroupSyncWrite groupSyncWritePosition(portHandler_, packetHandler_, address, length);
+
+  groupSyncWritePosition.addParam(JOINT_L_R, (uint8_t*)&value);
+  groupSyncWritePosition.addParam(JOINT_R_R, (uint8_t*)&value);
+  groupSyncWritePosition.addParam(JOINT_L_F, (uint8_t*)&value);
+  groupSyncWritePosition.addParam(JOINT_R_F, (uint8_t*)&value);
+
+  groupSyncWritePosition.txPacket();
+  groupSyncWritePosition.clearParam();
+}
+
+void ConveyorMotorDriver::syncWritePosition(int address, int length, int* value)
+{
+  dynamixel::GroupSyncWrite groupSyncWritePosition(portHandler_, packetHandler_, address, length);
+
+  groupSyncWritePosition.addParam(JOINT_L_R, (uint8_t*)&value[0]);
+  groupSyncWritePosition.addParam(JOINT_R_R, (uint8_t*)&value[1]);
+  groupSyncWritePosition.addParam(JOINT_L_F, (uint8_t*)&value[2]);
+  groupSyncWritePosition.addParam(JOINT_R_F, (uint8_t*)&value[3]);
+
+  groupSyncWritePosition.txPacket();
+  groupSyncWritePosition.clearParam();
+}
+
+void ConveyorMotorDriver::syncReadVelocity(int address, int length, int* readValues)
 {
   // Initialize Groupsyncread instance for Present Position
-  dynamixel::GroupSyncRead groupSyncRead(portHandler_, packetHandler_, address, length);
+  dynamixel::GroupSyncRead groupSyncReadVelocity(portHandler_, packetHandler_, address, length);
 
   // Add parameter storage for Dynamixel#1 present position value
-  groupSyncRead.addParam(WHEEL_L_R);
-  groupSyncRead.addParam(WHEEL_R_R);
-  groupSyncRead.addParam(WHEEL_L_F);
-  groupSyncRead.addParam(WHEEL_R_F);
-  groupSyncRead.addParam(JOINT_L_R);
-  groupSyncRead.addParam(JOINT_R_R);
-  groupSyncRead.addParam(JOINT_L_F);
-  groupSyncRead.addParam(JOINT_R_F);
+  groupSyncReadVelocity.addParam(WHEEL_L_R);
+  groupSyncReadVelocity.addParam(WHEEL_R_R);
+  groupSyncReadVelocity.addParam(WHEEL_L_F);
+  groupSyncReadVelocity.addParam(WHEEL_R_F);
 
-  groupSyncRead.txRxPacket();
+  groupSyncReadVelocity.txRxPacket();
 
   readValues[0] = (int)groupSyncRead.getData(WHEEL_L_R, address, length);
   readValues[1] = (int)groupSyncRead.getData(WHEEL_R_R, address, length);
   readValues[2] = (int)groupSyncRead.getData(WHEEL_L_F, address, length);
   readValues[3] = (int)groupSyncRead.getData(WHEEL_R_F, address, length);
+
+  groupSyncRead.clearParam();
+}
+
+void ConveyorMotorDriver::syncReadPosition(int address, int length, int* readValues)
+{
+  // Initialize Groupsyncread instance for Present Position
+  dynamixel::GroupSyncRead groupSyncReadPosition(portHandler_, packetHandler_, address, length);
+
+  // Add parameter storage for Dynamixel#1 present position value
+  groupSyncReadPosition.addParam(JOINT_L_R);
+  groupSyncReadPosition.addParam(JOINT_R_R);
+  groupSyncReadPosition.addParam(JOINT_L_F);
+  groupSyncReadPosition.addParam(JOINT_R_F);
+
+  groupSyncReadPosition.txRxPacket();
+
   readValues[4] = (int)groupSyncRead.getData(JOINT_L_R, address, length);
   readValues[5] = (int)groupSyncRead.getData(JOINT_R_R, address, length);
   readValues[6] = (int)groupSyncRead.getData(JOINT_L_F, address, length);
